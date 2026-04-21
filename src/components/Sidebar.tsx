@@ -3,18 +3,17 @@ import type { ViewKey } from "../lib/types";
 type NavItem = {
   key: ViewKey;
   label: string;
-  icon: string;
 };
 
 const navItems: NavItem[] = [
-  { key: "dashboard", label: "Dashboard", icon: "◐" },
-  { key: "workouts", label: "Workouts", icon: "▲" },
-  { key: "checkins", label: "Check-ins", icon: "◆" },
-  { key: "exercises", label: "Exercises", icon: "≡" },
-  { key: "measurements", label: "Measurements", icon: "◎" },
-  { key: "goals", label: "Goals", icon: "★" },
-  { key: "programs", label: "Programs", icon: "❏" },
-  { key: "settings", label: "Settings", icon: "⚙" },
+  { key: "dashboard", label: "Overview" },
+  { key: "workouts", label: "Workouts" },
+  { key: "checkins", label: "Check-ins" },
+  { key: "exercises", label: "Exercises" },
+  { key: "measurements", label: "Measurements" },
+  { key: "goals", label: "Goals" },
+  { key: "programs", label: "Programs" },
+  { key: "settings", label: "Settings" },
 ];
 
 type SidebarProps = {
@@ -27,22 +26,25 @@ export function Sidebar({ activeView, onSelect, mode }: SidebarProps) {
   return (
     <nav className="sidebar">
       <div className="sidebar-brand">
-        <span className="sidebar-brand-mark">GYM</span>
-        <span className="sidebar-brand-name">Training log</span>
+        <span className="sidebar-brand-mark">Training · Log</span>
+        <span className="sidebar-brand-name">Ledger</span>
       </div>
 
       <ul className="sidebar-nav">
-        {navItems.map((item) => (
+        {navItems.map((item, index) => (
           <li key={item.key}>
             <button
               type="button"
               className={`sidebar-link${activeView === item.key ? " is-active" : ""}`}
               onClick={() => onSelect(item.key)}
             >
-              <span className="sidebar-icon" aria-hidden>
-                {item.icon}
+              <span className="sidebar-index">
+                {String(index + 1).padStart(2, "0")}
               </span>
               <span>{item.label}</span>
+              <span className="sidebar-icon" aria-hidden>
+                {activeView === item.key ? "→" : ""}
+              </span>
             </button>
           </li>
         ))}
@@ -51,11 +53,11 @@ export function Sidebar({ activeView, onSelect, mode }: SidebarProps) {
       <div className="sidebar-mode">
         <span className={`mode-dot mode-${mode}`} />
         <div>
-          <strong>{mode === "convex" ? "Live sync" : "Local only"}</strong>
+          <strong>{mode === "convex" ? "Live / Synced" : "Local / Browser"}</strong>
           <p>
             {mode === "convex"
-              ? "Changes write to your Convex backend."
-              : "Data stays in this browser."}
+              ? "Entries stream to Convex."
+              : "Entries stay on this device."}
           </p>
         </div>
       </div>

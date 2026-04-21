@@ -1,14 +1,13 @@
 import type { Dispatch, SetStateAction } from "react";
 import { MetricCard } from "../components/MetricCard";
-import { PageHeader } from "../components/PageHeader";
 import type { DailySummary, TrackerBundle, ViewKey } from "../lib/types";
 import {
-  formatLongDate,
   formatMetricValue,
   formatShortDate,
   formatWeight,
   getDateKey,
   numberFormatter,
+  parseDateKey,
 } from "../lib/utils";
 
 type DashboardViewProps = {
@@ -33,6 +32,15 @@ function emptySummary(dateKey: string): DailySummary {
   };
 }
 
+const heroDay = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+const heroMonth = new Intl.DateTimeFormat("en-US", { month: "short" });
+
+function dayOfYear(dateKey: string) {
+  const date = parseDateKey(dateKey);
+  const start = new Date(date.getFullYear(), 0, 0);
+  return Math.floor((date.getTime() - start.getTime()) / 86_400_000);
+}
+
 export function DashboardView({
   tracker,
   selectedDateKey,
@@ -44,63 +52,107 @@ export function DashboardView({
     dashboard.recentDays.find((day) => day.dateKey === dashboard.selectedDateKey) ??
     emptySummary(dashboard.selectedDateKey);
 
-  const toneMessage =
-    selectedSummary.totalSets > 0
-      ? "Training volume is on the board."
-      : "No workout logged yet for this day.";
+  const date = parseDateKey(selectedDateKey);
+  const weekday = heroDay.format(date).toUpperCase();
+  const monthShort = heroMonth.format(date).toUpperCase();
+  const dayNumber = String(date.getDate()).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  const dayIndex = String(dayOfYear(selectedDateKey)).padStart(3, "0");
 
   return (
     <div className="view-stack">
-      <PageHeader
-        eyebrow="Overview"
-        title={formatLongDate(selectedDateKey)}
-        description={`${toneMessage} Pick a view from the sidebar to dig deeper.`}
-        actions={
-          <>
-            <label className="field inline-field">
-              <span className="field-label">Date</span>
+      <section className="hero-slab">
+        <div className="hero-main">
+          <div className="hero-stamp">
+            <span>Entry № {dayIndex} / 365</span>
+            <span>{weekday}</span>
+          </div>
+          <h1 className="hero-title">
+            {monthShort}
+            <br />
+            <em>{dayNumber}</em>
+            <span style={{ color: "rgba(242,237,228,0.35)", fontStyle: "normal" }}>
+              &nbsp;&rsquo;{year}
+            </span>
+          </h1>
+          <p className="hero-sub">
+            {selectedSummary.totalSets > 0
+              ? `${selectedSummary.workoutCount} ENTRIES · ${numberFormatter.format(selectedSummary.totalSets)} SETS`
+              : "No volume logged"}
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              marginTop: 36,
+            }}
+          >
+            <label className="field inline-field" style={{ gap: 4 }}>
+              <span
+                className="field-label"
+                style={{ color: "rgba(242,237,228,0.55)" }}
+              >
+                Date
+              </span>
               <input
                 className="date-picker"
                 type="date"
                 value={selectedDateKey}
                 onChange={(event) => setSelectedDateKey(event.target.value)}
+                style={{
+                  borderBottomColor: "rgba(242,237,228,0.4)",
+                  color: "#f2ede4",
+                  background: "transparent",
+                  padding: "6px 0",
+                }}
               />
             </label>
             <button
               type="button"
               className="secondary-button"
               onClick={() => setSelectedDateKey(getDateKey())}
+              style={{
+                background: "transparent",
+                borderColor: "rgba(242,237,228,0.35)",
+                color: "#f2ede4",
+              }}
             >
-              Today
+              Jump · Today
             </button>
-          </>
-        }
-      />
+          </div>
+        </div>
+
+        <div className="hero-aside">
+          <div className="hero-stat-label">Current streak</div>
+          <div className="hero-stat-number is-accent">{dashboard.streak}</div>
+          <div className="hero-stat-foot">
+            consecutive day{dashboard.streak === 1 ? "" : "s"} logged
+          </div>
+        </div>
+      </section>
 
       <div className="stat-grid">
         <MetricCard
-          label="Current streak"
-          value={`${dashboard.streak} day${dashboard.streak === 1 ? "" : "s"}`}
-          hint="Consecutive logged training days"
-          tone="light"
-        />
-        <MetricCard
-          label="Sets today"
+          label="Sets / today"
           value={numberFormatter.format(selectedSummary.totalSets)}
-          hint={`${selectedSummary.workoutCount} exercise entries`}
-          tone="light"
+          hint={`${selectedSummary.workoutCount} entries`}
         />
         <MetricCard
-          label="7-day volume"
-          value={formatMetricValue(dashboard.weeklySummary.totalVolume, " kg")}
-          hint={`${dashboard.weeklySummary.activeDays} active day${dashboard.weeklySummary.activeDays === 1 ? "" : "s"}`}
-          tone="light"
+          label="Volume / 7d"
+          value={formatMetricValue(dashboard.weeklySummary.totalVolume, "")}
+          hint={`${dashboard.weeklySummary.activeDays} active · kg`}
         />
         <MetricCard
           label="Body weight"
-          value={formatMetricValue(selectedSummary.bodyWeightKg, " kg")}
-          hint="Optional daily weigh-in"
-          tone="light"
+          value={formatMetricValue(selectedSummary.bodyWeightKg, "")}
+          hint="kg · weigh-in"
+        />
+        <MetricCard
+          label="Minutes / 7d"
+          value={formatMetricValue(dashboard.weeklySummary.totalMinutes, "")}
+          hint="tracked time"
         />
       </div>
 
@@ -108,7 +160,7 @@ export function DashboardView({
         <section className="insight-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow eyebrow-dark">Day summary</p>
+              <p className="eyebrow eyebrow-dark">Day / Summary</p>
               <h2>Snapshot</h2>
             </div>
             <button
@@ -116,7 +168,7 @@ export function DashboardView({
               className="link-button"
               onClick={() => goToView("workouts")}
             >
-              Log workout →
+              Log →
             </button>
           </div>
           <dl className="summary-list">
@@ -135,12 +187,12 @@ export function DashboardView({
             <SummaryRow
               label="Energy"
               value={
-                selectedSummary.energy === null ? "--" : `${selectedSummary.energy}/5`
+                selectedSummary.energy === null ? "—" : `${selectedSummary.energy}/5`
               }
             />
             <SummaryRow
               label="Mood"
-              value={selectedSummary.mood === null ? "--" : `${selectedSummary.mood}/5`}
+              value={selectedSummary.mood === null ? "—" : `${selectedSummary.mood}/5`}
             />
           </dl>
         </section>
@@ -148,8 +200,8 @@ export function DashboardView({
         <section className="insight-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow eyebrow-dark">Recent days</p>
-              <h2>Consistency</h2>
+              <p className="eyebrow eyebrow-dark">Consistency</p>
+              <h2>Recent</h2>
             </div>
           </div>
           <div className="history-list">
@@ -174,7 +226,7 @@ export function DashboardView({
                   <div className="history-metrics">
                     <span>{day.totalSets} sets</span>
                     <span>
-                      {day.bodyWeightKg === null ? "--" : `${day.bodyWeightKg} kg`}
+                      {day.bodyWeightKg === null ? "—" : `${day.bodyWeightKg} kg`}
                     </span>
                   </div>
                 </button>
@@ -186,8 +238,8 @@ export function DashboardView({
         <section className="insight-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow eyebrow-dark">Focus split</p>
-              <h2>Last 2 weeks</h2>
+              <p className="eyebrow eyebrow-dark">Focus / 14d</p>
+              <h2>Split</h2>
             </div>
           </div>
           <div className="breakdown-list">
@@ -199,7 +251,7 @@ export function DashboardView({
               dashboard.muscleGroupBreakdown.map((item) => (
                 <div className="breakdown-row" key={item.muscleGroup}>
                   <span>{item.muscleGroup}</span>
-                  <strong>{item.workoutCount}</strong>
+                  <strong>{String(item.workoutCount).padStart(2, "0")}</strong>
                 </div>
               ))
             )}
@@ -209,8 +261,8 @@ export function DashboardView({
         <section className="insight-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow eyebrow-dark">Exercise board</p>
-              <h2>Highlights</h2>
+              <p className="eyebrow eyebrow-dark">Highlights</p>
+              <h2>Exercise board</h2>
             </div>
             <button
               type="button"
