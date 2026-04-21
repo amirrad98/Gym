@@ -7,6 +7,7 @@
     "dev": "vite",
     "convex:dev": "convex dev",
     "build": "tsc -b && vite build",
+    "build:gh": "VITE_CONVEX_URL= tsc -b && VITE_CONVEX_URL= vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
